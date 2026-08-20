@@ -11,7 +11,7 @@ test
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-network = Network(H, W, message_length, noise_layers, device, batch_size, lr, with_diffusion)
+network = Network(H, W, message_length, noise_layers, device, batch_size, lr, 100, with_diffusion)
 EC_path = result_folder + "models/EC_" + str(model_epoch) + ".pth"
 network.load_model_ed(EC_path)
 
@@ -38,7 +38,7 @@ saved_iterations = np.random.choice(np.arange(len(test_dataset)), size=save_imag
 saved_all = None
 
 num = 0
-test_log = "./results/MBRS_m30_Combined([Identity(),Jpeg(50),Crop(0.7,0.7),Cropout(0.2,0.2),Dropout(0.2),GN(0.0,0.03)])__2026_08_18__10_57_25/gn.txt"
+test_log = "./results/MBRS_m30_Combined([Identity(),Jpeg(50),Crop(0.7,0.7),Cropout(0.2,0.2),Dropout(0.2),GN(0.0,0.03)])__2026_08_18__10_57_25/jpeg.txt"
 for i, images in enumerate(test_dataloader):
 	image = images.to(device)
 	message = torch.Tensor(np.random.choice([0, 1], (image.shape[0], message_length))).to(device)

@@ -9,6 +9,6 @@
   "message_length": 30,
   "save_images_number": 4, 
   "noise_layers": [
-    "GN(0.0, 0.005)"
+    "Jpeg(40)"
   ]
 }

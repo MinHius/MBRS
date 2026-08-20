@@ -57,8 +57,8 @@ class Network:
 
         # weight of encoder-decoder loss
         self.discriminator_weight = 0.01
-        self.encoder_weight = 1.5
-        self.decoder_weight = 1.0
+        self.encoder_weight = 1.0
+        self.decoder_weight = 3.0
 
     def step_scheduler(self):
         """Call this once at the end of each training epoch."""
