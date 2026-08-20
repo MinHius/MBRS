@@ -17,3 +17,6 @@ from .gaussian_filter import GF
 from .salt_pepper_noise import SP
 from .jpeg import Jpeg, JpegSS, JpegMask, JpegTest
 from .combined import Combined
+from .resize import Resize
+
+# from .jpeg_test import Jpeg, JpegSS, JpegMask, JpegTest

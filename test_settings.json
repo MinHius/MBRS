@@ -1,14 +1,14 @@
 {
-  "result_folder": "MBRS_256_m256/",
-  "model_epoch": 42,
-  "with_diffusion": false,
+  "result_folder": "MBRS_m30_Combined([Identity(),Jpeg(50),Crop(0.7,0.7),Cropout(0.2,0.2),Dropout(0.2),GN(0.0,0.03)])__2026_08_18__10_57_25/",
+  "model_epoch": 100,
+  "with_diffusion": true,
   "strength_factor": 1,
-  "dataset_path": "datasets/",
-  "H": 256,
-  "W": 256,
-  "message_length": 256,
-  "save_images_number": 4,
+  "dataset_path": "./official_images/",
+  "H": 128,
+  "W": 128,
+  "message_length": 30,
+  "save_images_number": 4, 
   "noise_layers": [
-    "JpegTest(50)"
+    "GN(0.0, 0.005)"
   ]
 }

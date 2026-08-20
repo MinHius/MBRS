@@ -1,19 +1,19 @@
 {
   "project_name": "MBRS",
-  "with_diffusion": false,
+  "with_diffusion": true,
   "only_decoder": false,
-  "epoch_number": 101,
-  "batch_size": 4,
+  "epoch_number": 30,
+  "batch_size": 30,
   "train_continue": false,
   "train_continue_path": "/",
   "train_continue_epoch": 0,
-  "dataset_path": "datasets/",
+  "dataset_path": "./image_30k",
   "save_images_number": 4,
   "H": 128,
   "W": 128,
-  "message_length": 64,
+  "message_length": 30,
   "lr": 1e-3,
   "noise_layers": [
-    "Combined([JpegMask(50),Jpeg(50),Identity()])"
+    "Combined([Identity(),Jpeg(50),Resize(0.7, 1.0),Crop(0.7,0.7),Cropout(0.2,0.2),Dropout(0.2),GN(0.0,0.03)])"
   ]
 }
