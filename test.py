@@ -38,7 +38,7 @@ saved_iterations = np.random.choice(np.arange(len(test_dataset)), size=save_imag
 saved_all = None
 
 num = 0
-test_log = "./results/MBRS_m30_Combined([Identity(),Jpeg(50),Crop(0.7,0.7),Cropout(0.2,0.2),Dropout(0.2),GN(0.0,0.03)])__2026_08_18__10_57_25/jpeg.txt"
+test_log = "./results/MBRS_m30_Combined([Identity(),Jpeg(50),Crop(0.7,0.7),Cropout(0.2,0.2),Dropout(0.2),GN(0.0,0.03)])__2026_08_18__10_57_25/resize.txt"
 for i, images in enumerate(test_dataloader):
 	image = images.to(device)
 	message = torch.Tensor(np.random.choice([0, 1], (image.shape[0], message_length))).to(device)
@@ -61,7 +61,9 @@ for i, images in enumerate(test_dataloader):
 
 		encoded_images = network.encoder_decoder.module.encoder(images, messages)
 		encoded_images = images + (encoded_images - image) * strength_factor
+		print("Before noise:", encoded_images.min().item(), encoded_images.max().item())
 		noised_images = network.encoder_decoder.module.noise([encoded_images, images])
+		print("After noise: ", noised_images.min().item(), noised_images.max().item())
 
 		decoded_messages = network.encoder_decoder.module.decoder(noised_images)
 

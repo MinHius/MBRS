@@ -75,10 +75,10 @@ total_epochs = epoch_number + (train_continue_epoch if train_continue else 0)
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 network = Network(H, W, message_length, noise_layers, device, batch_size, lr, total_epochs, with_diffusion, only_decoder)
 
-train_dataset = MBRSDataset(os.path.join(dataset_path, "train"), H, W)
+train_dataset = MBRSDataset(os.path.join(dataset_path, "train"), H, W, True)
 train_dataloader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True, num_workers=0, pin_memory=True)
 
-val_dataset = MBRSDataset(os.path.join(dataset_path, "validation"), H, W)
+val_dataset = MBRSDataset(os.path.join(dataset_path, "validation"), H, W, False)
 val_dataloader = DataLoader(val_dataset, batch_size=batch_size, shuffle=False, num_workers=0, pin_memory=True)
 
 if train_continue:

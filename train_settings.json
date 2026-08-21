@@ -2,7 +2,7 @@
   "project_name": "MBRS",
   "with_diffusion": true,
   "only_decoder": false,
-  "epoch_number": 30,
+  "epoch_number": 21,
   "batch_size": 30,
   "train_continue": false,
   "train_continue_path": "/",
@@ -12,7 +12,7 @@
   "H": 128,
   "W": 128,
   "message_length": 30,
-  "lr": 1e-3,
+  "lr": 5e-4,
   "noise_layers": [
     "Combined([Identity(),Jpeg(50),Resize(0.7, 1.0),Crop(0.7,0.7),Cropout(0.2,0.2),Dropout(0.2),GN(0.0,0.03)])"
   ]

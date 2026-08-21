@@ -39,10 +39,17 @@ class Network:
 
         # optimizer (D learning rate can be slightly lower or equal)
         self.opt_encoder_decoder = torch.optim.Adam(
-            filter(lambda p: p.requires_grad, self.encoder_decoder.parameters()), lr=lr
+            filter(lambda p: p.requires_grad, self.encoder_decoder.parameters()),
+            lr=lr,
+            weight_decay=1e-4  # Add here
         )
-        self.opt_discriminator = torch.optim.Adam(self.discriminator.parameters(), lr=lr*0.2)
 
+        self.opt_discriminator = torch.optim.Adam(
+            self.discriminator.parameters(),
+            lr=lr * 0.2,
+            weight_decay=1e-5  # Optional / mild
+        )
+        
         # learning rate schedulers (Cosine Annealing)
         self.scheduler_encoder_decoder = torch.optim.lr_scheduler.CosineAnnealingLR(
             self.opt_encoder_decoder, T_max=total_epochs, eta_min=1e-6
@@ -58,7 +65,7 @@ class Network:
         # weight of encoder-decoder loss
         self.discriminator_weight = 0.01
         self.encoder_weight = 1.0
-        self.decoder_weight = 3.0
+        self.decoder_weight = 1.5
 
     def step_scheduler(self):
         """Call this once at the end of each training epoch."""
