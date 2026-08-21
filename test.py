@@ -21,15 +21,15 @@ test_dataloader = DataLoader(test_dataset, batch_size=batch_size, shuffle=False,
 print("\nStart Testing : \n\n")
 
 test_result = {
-	"max_ber": 0.0,
-	"mean_ber": 0.0,
-	"min_ber": 0.0,
-	"max_psnr": 0.0,
-	"mean_psnr": 0.0,
-	"min_psnr": 0.0,
-	"max_ssim": 0.0,
-	"mean_ssim": 0.0,
-	"min_ssim": 0.0,
+    "max_ber": 0.0,
+    "mean_ber": 0.0,
+    "min_ber": 0.0,
+    "max_psnr": 0.0,
+    "mean_psnr": 0.0,
+    "min_psnr": 0.0,
+    "max_ssim": 0.0,
+    "mean_ssim": 0.0,
+    "min_ssim": 0.0,
 }
 
 start_time = time.time()
@@ -39,97 +39,113 @@ saved_all = None
 
 num = 0
 test_log = "./results/MBRS_m30_Combined([Identity(),Jpeg(50),Crop(0.7,0.7),Cropout(0.2,0.2),Dropout(0.2),GN(0.0,0.03)])__2026_08_18__10_57_25/resize.txt"
+start_event = torch.cuda.Event(enable_timing=True)
+end_event = torch.cuda.Event(enable_timing=True)
+
 for i, images in enumerate(test_dataloader):
-	image = images.to(device)
-	message = torch.Tensor(np.random.choice([0, 1], (image.shape[0], message_length))).to(device)
+    image = images.to(device)
+    message = torch.Tensor(np.random.choice([0, 1], (image.shape[0], message_length))).to(device)
 
-	'''
-	test
-	'''
-	network.encoder_decoder.eval()
-	network.discriminator.eval()
-	min_ber = 1.0
-	min_psnr = 90.0
-	min_ssim = 1.0
-	max_ber = 0.0
-	max_psnr = 0.0
-	max_ssim = 0.0
+    min_ber, min_psnr, min_ssim = 1.0, 90.0, 1.0
+    max_ber, max_psnr, max_ssim = 0.0, 0.0, 0.0
 
-	with torch.no_grad():
-		# use device to compute
-		images, messages = images.to(network.device), message.to(network.device)
+    with torch.no_grad():
+        images, messages = images.to(network.device), message.to(network.device)
 
-		encoded_images = network.encoder_decoder.module.encoder(images, messages)
-		encoded_images = images + (encoded_images - image) * strength_factor
-		print("Before noise:", encoded_images.min().item(), encoded_images.max().item())
-		noised_images = network.encoder_decoder.module.noise([encoded_images, images])
-		print("After noise: ", noised_images.min().item(), noised_images.max().item())
+        # Measure 1 image on the very first iteration
+        if i == 2:
+            single_img = images[0:1]
+            single_msg = messages[0:1]
 
-		decoded_messages = network.encoder_decoder.module.decoder(noised_images)
+            # GPU Warmup
+            for _ in range(5):
+                _ = network.encoder_decoder.module.encoder(single_img, single_msg)
 
-		# psnr
-		psnr = -(kornia.losses.psnr_loss(encoded_images.detach(), images, 2).item())
+            torch.cuda.synchronize()
+            start_event.record()
 
-		# ssim
-		ssim = 1 - 2 * ssim_loss(
-			encoded_images.detach(),
-			images,
-			window_size=5,
-			reduction="mean"
-		)
+            # Pipeline for 1 image
+            enc = network.encoder_decoder.module.encoder(single_img, single_msg)
+            enc = single_img + (enc - single_img) * strength_factor
+            noi = network.encoder_decoder.module.noise([enc, single_img])
+            dec = network.encoder_decoder.module.decoder(noi)
 
-	'''
-	decoded message error rate
-	'''
-	error_rate = network.decoded_message_error_rate_batch(messages, decoded_messages)
+            end_event.record()
+            torch.cuda.synchronize()
 
-	result = {
-		"max_ber": max(max_ber, float(error_rate)),
-		"mean_ber": float(error_rate),
-		"min_ber": min(min_ber, float(error_rate)),
-		"max_psnr": max(max_psnr, float(psnr)),
-		"mean_psnr": float(psnr),
-		"min_psnr": min(min_psnr, float(psnr)),
-		"max_ssim": max(max_ssim, float(ssim)),
-		"mean_ssim": float(ssim),
-		"min_ssim": min(min_ssim, float(ssim)),
-	}
+            single_latency = start_event.elapsed_time(end_event)
+            print(f"=== GPU Latency for 1 Image: {single_latency:.3f} ms ===\n")
 
-	for key in result:
-		print(f"{key}: {result[key]}")
-		test_result[key] += result[key]
+        # Regular batch execution
+        encoded_images = network.encoder_decoder.module.encoder(images, messages)
+        encoded_images = images + (encoded_images - image) * strength_factor
+        noised_images = network.encoder_decoder.module.noise([encoded_images, images])
 
-	num += 1
+        decoded_messages = network.encoder_decoder.module.decoder(noised_images)
 
-	if i in saved_iterations:
-		if saved_all is None:
-			saved_all = get_random_images(image, encoded_images, noised_images)
-		else:
-			saved_all = concatenate_images(saved_all, image, encoded_images, noised_images)
+        # psnr
+        psnr = -(kornia.losses.psnr_loss(encoded_images.detach(), images, 2).item())
 
-	'''
-	test results
-	'''
-	content = "Image " + str(i) + " : \n"
-	for key in test_result:
-		content += key + "=" + str(result[key]) + ","
-	content += "\n"
+        # ssim
+        ssim = 1 - 2 * ssim_loss(
+            encoded_images.detach(),
+            images,
+            window_size=5,
+            reduction="mean"
+        )
 
-	# with open(test_log, "a") as file:
-	# 	file.write(content)
+    '''
+    decoded message error rate
+    '''
+    error_rate = network.decoded_message_error_rate_batch(messages, decoded_messages)
 
-	print(content)
+    result = {
+        "max_ber": max(max_ber, float(error_rate)),
+        "mean_ber": float(error_rate),
+        "min_ber": min(min_ber, float(error_rate)),
+        "max_psnr": max(max_psnr, float(psnr)),
+        "mean_psnr": float(psnr),
+        "min_psnr": min(min_psnr, float(psnr)),
+        "max_ssim": max(max_ssim, float(ssim)),
+        "mean_ssim": float(ssim),
+        "min_ssim": min(min_ssim, float(ssim)),
+    }
+
+    for key in result:
+        # print(f"{key}: {result[key]}")
+        test_result[key] += result[key]
+
+    num += 1
+
+    if i in saved_iterations:
+        if saved_all is None:
+            saved_all = get_random_images(image, encoded_images, noised_images)
+        else:
+            saved_all = concatenate_images(saved_all, image, encoded_images, noised_images)
+
+    '''
+    test results
+    '''
+    content = "Image " + str(i) + " : \n"
+    for key in test_result:
+        content += key + "=" + str(result[key]) + ","
+    content += "\n"
+
+    # with open(test_log, "a") as file:
+    # 	file.write(content)
+
+    # print(content)
 
 '''
 test results
 '''
 content = "Average : \n"
 for key in test_result:
-	content += key + "=" + str(test_result[key] / num) + ","
+    content += key + "=" + str(test_result[key] / num) + ","
 content += "\n"
 
 with open(test_log, "a") as file:
-	file.write(content)
+    file.write(content)
 
 print(content)
 save_images(saved_all, "test", result_folder + "images/", resize_to=(W, H))
